@@ -1,9 +1,9 @@
 #!/bin/bash
 
-# Функция для проверки прав root.
+# Функция для проверки прав root
 check_root() {
     if [[ "$(id -u)" -ne 0 ]]; then
-        echo "Скрипт должен быть запущен с правами root, повысьте права."
+        echo "Скрипт должен быть запущен с правами root. Используйте sudo."
         exit 1
     fi
 }
@@ -17,34 +17,21 @@ validate_ip_part() {
     fi
 }
 
-# Функция для сканирования одного хоста
-scan_host() {
+# Универсальная функция для сканирования, обрабатывающая все режимы.
+perform_scan() {
     local prefix="$1"
     local interface="$2"
-    local subnet="$3"
-    local host="$4"
-    echo "[*] IP : ${prefix}.${subnet}.${host}"
-    arping -c 3 -i "$interface" "${prefix}.${subnet}.${host}" 2> /dev/null
-}
+    local subnets="$3"
+    local hosts="$4"
 
-# Функция для сканирования всех хостов в одной подсети
-scan_subnet() {
-    local prefix="$1"
-    local interface="$2"
-    local subnet="$3"
-    for host in {1..255}
+    # Используем eval для итерации по диапазонам, переданным как строки
+    for subnet in $(eval echo "$subnets")
     do
-       scan_host "$prefix" "$interface" "$subnet" "$host"
-    done
-}
-
-# Функция для сканирования всех подсетей и хостов
-scan_all_subnets() {
-    local prefix="$1"
-    local interface="$2"
-    for subnet in {1..255}
-    do
-        scan_subnet "$prefix" "$interface" "$subnet"
+        for host in $(eval echo "$hosts")
+        do
+            echo "[*] IP : ${prefix}.${subnet}.${host}"
+            arping -c 3 -i "$interface" "${prefix}.${subnet}.${host}" 2> /dev/null
+        done
     done
 }
 
@@ -73,22 +60,22 @@ if [[ -z "$INTERFACE" ]]; then
     exit 1
 fi
 
-# В зависимости от количества аргументов запускаем нужную функцию
+# В зависимости от количества аргументов запускаем универсальную функцию
 case "$#" in
     2)
         echo "Сканирование всей подсети ${PREFIX}.ххх.ххх..."
-        scan_all_subnets "$PREFIX" "$INTERFACE"
+        perform_scan "$PREFIX" "$INTERFACE" "{1..255}" "{1..255}"
         ;;
     3)
         validate_ip_part "$SUBNET"
         echo "Сканирование хостов в подсети ${PREFIX}.${SUBNET}.ххх..."
-        scan_subnet "$PREFIX" "$INTERFACE" "$SUBNET"
+        perform_scan "$PREFIX" "$INTERFACE" "$SUBNET" "{1..255}"
         ;;
     4)
         validate_ip_part "$SUBNET"
         validate_ip_part "$HOST"
         echo "Сканирование одного IP-адреса: ${PREFIX}.${SUBNET}.${HOST}..."
-        scan_host "$PREFIX" "$INTERFACE" "$SUBNET" "$HOST"
+        perform_scan "$PREFIX" "$INTERFACE" "$SUBNET" "$HOST"
         ;;
 esac
 
