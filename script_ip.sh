@@ -70,12 +70,6 @@ fi
 # Валидация интерфейса
 if [[ -z "$INTERFACE" ]]; then
     echo "\$INTERFACE должен быть передан вторым аргументом."
- exit 1
-fi
-
-# Валидация интерфейса
-if [[ -z "$INTERFACE" ]]; then
-    echo "\$INTERFACE должен быть передан вторым аргументом."
     exit 1
 fi
 
