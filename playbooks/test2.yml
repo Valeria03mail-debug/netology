@@ -1,0 +1,19 @@
+---
+- name: Установка и настройка tuned
+  hosts: all
+  become: yes
+  become_method: sudo
+  tasks:
+    - name: Обновить индекс пакетов
+      apt:
+        update_cache: yes
+    - name: Установить tuned
+      apt:
+        name: tuned
+        state: present
+    - name: Запустить tuned службу
+      systemd:
+        name: tuned
+        state: started
+        enabled: yes
+        daemon_reload: yes
