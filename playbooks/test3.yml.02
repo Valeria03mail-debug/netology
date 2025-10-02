@@ -1,0 +1,34 @@
+---
+- name: Изменение приветствия системы (motd) с информацией о системе
+  hosts: all
+  become: yes
+  become_method: sudo
+  vars:
+    admin_greeting: "Хорошего дня, системный администратор!"
+  tasks:
+    - name: Получить информацию о системе
+      setup:
+        filter:
+          - "ansible_default_ipv4"
+          - "ansible_hostname"
+    - name: Создать кастомное MOTD с системной информацией
+      copy:
+        content: |
+          ============================================
+          Добро пожаловать в систему!
+          Информация о системе:
+          - Hostname: {{ ansible_hostname }}
+          - IP-адрес: {{ ansible_default_ipv4.address | default('не определен') }}
+          {{ admin_greeting }}
+          ============================================
+        dest: /etc/motd
+        owner: root
+        group: root
+        mode: '0644'
+    - name: Показать установленное приветствие
+      command: cat /etc/motd
+      register: motd_content
+      changed_when: false
+    - name: Вывести содержимое motd
+      debug:
+        msg: "Установленное MOTD:\n{{ motd_content.stdout }}"
