@@ -1,0 +1,39 @@
+---
+- name: Скачать и распаковать Apache Kafka
+  hosts: all
+  become: yes
+  become_method: sudo
+  vars:
+    install_dir: "/opt/kafka"
+  tasks:
+    - name: Создать папку для загрузок
+      file:
+        path: "/tmp/kafka_download"
+        state: directory
+        mode: '0755'
+    - name: Скачать Apache Kafka с зеркала
+      get_url:
+        url: "https://archive.apache.org/dist/kafka/3.5.2/kafka_2.13-3.5.2.tgz"
+        dest: "/tmp/kafka_download/kafka.tgz"
+        mode: '0644'
+        timeout: 60
+    - name: Создать папку для распаковки
+      file:
+        path: "{{ install_dir }}"
+        state: directory
+        mode: '0755'
+    - name: Распаковать архив
+      unarchive:
+        src: "/tmp/kafka_download/kafka.tgz"
+        dest: "{{ install_dir }}"
+        remote_src: yes
+        extra_opts: ["--strip-components=1"]
+        creates: "{{ install_dir }}/bin"
+    - name: Проверить установку
+      stat:
+        path: "{{ install_dir }}/bin"
+      register: kafka_bin
+    - name: Сообщить об успешной установке
+      debug:
+        msg: "Kafka успешно установлена в {{ install_dir }}"
+      when: kafka_bin.stat.exists
