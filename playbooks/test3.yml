@@ -1,0 +1,22 @@
+---
+- name: Изменение приветствия системы (motd)
+  hosts: all
+  become: yes
+  become_method: sudo
+  vars:
+    custom_motd: "Добро пожаловать в нашу защищенную систему!"
+  tasks:
+    - name: Установить кастомное MOTD
+      copy:
+        content: "{{ custom_motd }}\n\n"
+        dest: /etc/motd
+        owner: root
+        group: root
+        mode: '0644'
+    - name: Показать содержимое motd
+      command: cat /etc/motd
+      register: motd_content
+      changed_when: false
+    - name: Вывести установленное приветствие
+      debug:
+        var: motd_content.stdout
