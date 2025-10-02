@@ -1,0 +1,42 @@
+---
+- name: Gather all facts
+  setup:
+    gather_subset: all
+
+- name: Install Apache web server
+  apt:
+    name: apache2
+    state: present
+    update_cache: yes
+
+- name: Ensure Apache is enabled and started
+  service:
+    name: apache2
+    state: started
+    enabled: yes
+
+- name: Allow Apache through firewall
+  ufw:
+    rule: allow
+    port: "{{ apache_port }}"
+    proto: tcp
+
+- name: Create custom index.html from template
+  template:
+    src: index.html.j2
+    dest: /var/www/html/index.html
+    owner: root
+    group: root
+    mode: '0644'
+  notify: restart apache
+
+- name: Verify website is accessible
+  uri:
+    url: "http://localhost:{{ apache_port }}/"
+    status_code: 200
+    timeout: 10
+  register: website_test
+  until: website_test.status == 200
+  retries: 3
+  delay: 5
+  changed_when: false
